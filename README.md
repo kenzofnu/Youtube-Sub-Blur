@@ -1,29 +1,37 @@
 # YouTube Sub Blur
 
-A Chrome extension that overlays a blur box on YouTube videos to hide hard-coded subtitles, designed for Japanese language immersion.
+Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for language immersion -- hide distracting hardsubs so you can focus on listening.
 
-## Install
+## Features
 
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable **Developer mode** (toggle in the top right)
-3. Click **Load unpacked** and select this folder
-4. The extension icon appears in the toolbar
+- Toggleable blur overlay with **Alt + B** (customizable)
+- Drag to reposition, drag edges/corners to resize
+- Box position and size saved automatically
+- Scales between windowed, theater, and fullscreen
+- Adjustable blur strength (1-40)
+- Option to auto-show on every video
 
-## Usage
+## Install from Chrome Web Store
 
-- **Toggle the blur box**: Press `Alt + B` while watching a YouTube video
-- **Move the box**: Hover over the blur box and drag the center handle
-- **Resize the box**: Hover and drag any edge or corner
-- The box position and size are saved automatically and restored next time
+Coming soon.
 
-## Settings (popup)
+## Install manually
 
-Click the extension icon to open settings:
+1. Download or clone this repo
+2. Open `chrome://extensions/` and enable **Developer mode**
+3. Click **Load unpacked** and select the project folder
+4. Open any YouTube video and press **Alt + B**
 
-- **Default On** -- automatically show the blur box when opening any YouTube video
-- **Blur Strength** -- adjust how strong the blur effect is (1-40)
-- **Reset Box Position** -- restore the box to its default centered-bottom position
+## Settings
 
-## Change Hotkey
+Click the extension icon to open the popup:
 
-Go to `chrome://extensions/shortcuts` to change the toggle keybinding.
+- **Default On** -- auto-show the blur box when a video loads
+- **Blur Strength** -- how strong the blur effect is
+- **Reset Box Position** -- restore default position
+
+To change the hotkey, go to `chrome://extensions/shortcuts`.
+
+## Privacy
+
+No data is collected. The extension only stores your preferences (blur strength, box position, default on/off) locally via Chrome's storage API. See [Privacy Policy](PRIVACY_POLICY.md).
