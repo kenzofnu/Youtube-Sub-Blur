@@ -2,6 +2,10 @@
 
 Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for language immersion -- hide distracting hardsubs so you can focus on listening.
 
+![Demo - dark video](screenshots/demo-dark.png)
+
+![Demo - light video](screenshots/demo-light.png)
+
 ## Features
 
 - Toggleable blur overlay with **Alt + B** (customizable)
@@ -10,6 +14,18 @@ Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for la
 - Scales between windowed, theater, and fullscreen
 - Adjustable blur strength (1-40)
 - Option to auto-show on every video
+
+## Settings
+
+![Settings popup](screenshots/settings.png)
+
+Click the extension icon to open the popup:
+
+- **Default On** -- auto-show the blur box when a video loads
+- **Blur Strength** -- how strong the blur effect is
+- **Reset Box Position** -- restore default position
+
+To change the hotkey, go to `chrome://extensions/shortcuts`.
 
 ## Install from Chrome Web Store
 
@@ -21,16 +37,6 @@ Coming soon.
 2. Open `chrome://extensions/` and enable **Developer mode**
 3. Click **Load unpacked** and select the project folder
 4. Open any YouTube video and press **Alt + B**
-
-## Settings
-
-Click the extension icon to open the popup:
-
-- **Default On** -- auto-show the blur box when a video loads
-- **Blur Strength** -- how strong the blur effect is
-- **Reset Box Position** -- restore default position
-
-To change the hotkey, go to `chrome://extensions/shortcuts`.
 
 ## Privacy
 
