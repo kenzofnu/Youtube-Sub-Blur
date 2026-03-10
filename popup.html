@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 280px;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+}
+
+.popup {
+  padding: 20px;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 18px;
+}
+
+.setting-group {
+  margin-bottom: 16px;
+}
+
+.setting-group > label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ccc;
+  margin-bottom: 6px;
+}
+
+.hint {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.hint a {
+  color: #5b9ef5;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.toggle-row input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  display: inline-block;
+  flex-shrink: 0;
+  position: relative;
+  top: 5px;
+  width: 36px;
+  height: 20px;
+  background: #3a3d4f;
+  border: 1px solid #555a72;
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.toggle-slider::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  margin: auto 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: left 0.2s;
+}
+
+.toggle-row input:checked + .toggle-slider {
+  background: #0b84ff;
+  border-color: #0b84ff;
+}
+
+.toggle-row input:checked + .toggle-slider::after {
+  left: 19px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #333;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #5b9ef5;
+  cursor: pointer;
+}
+
+.slider-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5b9ef5;
+  min-width: 22px;
+  text-align: right;
+}
+
+.hotkey-display {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #2a2a3e;
+  border: 1px solid #3a3a50;
+  border-radius: 6px;
+  padding: 6px 12px;
+  text-align: center;
+}
+
+.btn-reset {
+  width: 100%;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ccc;
+  background: #2a2a3e;
+  border: 1px solid #3a3a50;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-reset:hover {
+  background: #3a3a50;
+  border-color: #5b9ef5;
+}
+
+.status {
+  font-size: 11px;
+  color: #5b9ef5;
+  text-align: center;
+  min-height: 16px;
+  margin-top: 4px;
+}
+  </style>
+</head>
+<body>
+  <div class="popup">
+    <h1>Sub Blur</h1>
+    <p class="subtitle">Hide hard subs for immersion</p>
+
+    <div class="setting-group">
+      <label class="toggle-row">
+        <span>Default On</span>
+        <input type="checkbox" id="defaultOn">
+        <span class="toggle-slider"></span>
+      </label>
+      <p class="hint">Auto-show blur box when opening a video</p>
+    </div>
+
+    <div class="setting-group">
+      <label for="blurAmount">Blur Strength</label>
+      <div class="slider-row">
+        <input type="range" id="blurAmount" min="1" max="40" value="15">
+        <span id="blurValue" class="slider-value">15</span>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <label>Hotkey</label>
+      <p class="hotkey-display">Alt + B</p>
+      <p class="hint">Change in <a id="shortcutsLink" href="#">chrome://extensions/shortcuts</a></p>
+    </div>
+
+    <div class="setting-group">
+      <button id="resetBox" class="btn-reset">Reset Box Position</button>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
