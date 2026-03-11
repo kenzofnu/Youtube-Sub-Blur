@@ -7,6 +7,7 @@ const DEFAULTS = {
 };
 
 const defaultOnEl = document.getElementById("defaultOn");
+const intensiveEl = document.getElementById("intensiveMode");
 const blurAmountEl = document.getElementById("blurAmount");
 const blurValueEl = document.getElementById("blurValue");
 const rewindEl = document.getElementById("rewindSeconds");
@@ -46,6 +47,25 @@ chrome.storage.sync.get(DEFAULTS, (settings) => {
 
 defaultOnEl.addEventListener("change", () => {
   save({ defaultOn: defaultOnEl.checked });
+});
+
+intensiveEl.addEventListener("change", () => {
+  const action = intensiveEl.checked ? "start-intensive" : "stop-intensive";
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]) {
+      chrome.tabs.sendMessage(tabs[0].id, { action }).catch(() => {});
+    }
+  });
+});
+
+chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  if (tabs[0]) {
+    chrome.tabs.sendMessage(tabs[0].id, { action: "get-intensive-state" })
+      .then((response) => {
+        if (response && response.intensive) intensiveEl.checked = true;
+      })
+      .catch(() => {});
+  }
 });
 
 blurAmountEl.addEventListener("input", () => {

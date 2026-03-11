@@ -48,7 +48,9 @@
     settings.boxPosition = pos;
     settings.boxSize = size;
 
-    chrome.storage.sync.set({ boxPosition: pos, boxSize: size });
+    try {
+      chrome.storage.sync.set({ boxPosition: pos, boxSize: size });
+    } catch (e) { /* extension context invalidated */ }
   }
 
   function findVideo() {
@@ -96,6 +98,12 @@
     const container = getVideoContainer();
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
+
+    // Video not rendered yet -- retry shortly
+    if (videoRect.width < 10 || videoRect.height < 10) {
+      setTimeout(() => positionOverlay(), 200);
+      return;
+    }
 
     const offsetX = videoRect.left - containerRect.left;
     const offsetY = videoRect.top - containerRect.top;
@@ -197,9 +205,10 @@
     }
   }
 
-  function show() {
+  async function show() {
     videoElement = findVideo();
     if (!videoElement) return;
+    await loadSettings();
     createOverlay();
     overlay.style.display = "block";
     visible = true;
@@ -210,42 +219,117 @@
     visible = false;
   }
 
+  function setBlur(on) {
+    if (!overlay) return;
+    if (on) {
+      overlay.style.backdropFilter = `blur(${settings.blurAmount}px)`;
+      overlay.style.webkitBackdropFilter = `blur(${settings.blurAmount}px)`;
+      overlay.style.background = "rgba(0, 0, 0, 0.08)";
+    } else {
+      overlay.style.backdropFilter = "none";
+      overlay.style.webkitBackdropFilter = "none";
+      overlay.style.background = "transparent";
+    }
+  }
+
   function toggle() {
     if (visible) hide();
     else show();
   }
 
   // Review loop state
-  let reviewState = "idle"; // idle | pass1 | pass2
-  let reviewReturnTime = 0;
+  let reviewState = "idle"; // idle | pass1 | pass2 | newcontent
   let reviewCheckInterval = null;
+  let intensiveMode = false;
 
-  function startReviewLoop() {
-    if (!videoElement || reviewState !== "idle") return;
-    if (!visible) show();
+  function clearReviewInterval() {
+    if (reviewCheckInterval) {
+      clearInterval(reviewCheckInterval);
+      reviewCheckInterval = null;
+    }
+  }
 
-    reviewReturnTime = videoElement.currentTime;
-    const rewind = settings.rewindSeconds || 10;
-    videoElement.currentTime = Math.max(0, reviewReturnTime - rewind);
-
-    // Pass 1: subs visible (blur off), paused
-    hide();
-    videoElement.pause();
+  function runIntensiveChunk(chunkStart, chunkEnd) {
+    // Pass 1: rewind to chunkStart, unblur, play (read subs)
+    videoElement.currentTime = chunkStart;
+    setBlur(false);
+    videoElement.play();
     reviewState = "pass1";
 
     reviewCheckInterval = setInterval(() => {
-      if (reviewState === "pass1" && videoElement.currentTime >= reviewReturnTime) {
-        // Pass 1 done, start pass 2: blur on, rewind again
-        clearInterval(reviewCheckInterval);
-        videoElement.currentTime = Math.max(0, reviewReturnTime - rewind);
-        show();
-        videoElement.pause();
+      if (reviewState === "pass1" && videoElement.currentTime >= chunkEnd) {
+        clearReviewInterval();
+
+        // Pass 2: rewind to chunkStart, blur, play (listen)
+        videoElement.currentTime = chunkStart;
+        setBlur(true);
+        videoElement.play();
         reviewState = "pass2";
 
         reviewCheckInterval = setInterval(() => {
-          if (reviewState === "pass2" && videoElement.currentTime >= reviewReturnTime) {
-            clearInterval(reviewCheckInterval);
-            reviewCheckInterval = null;
+          if (reviewState === "pass2" && videoElement.currentTime >= chunkEnd) {
+            clearReviewInterval();
+
+            if (!intensiveMode) {
+              reviewState = "idle";
+              return;
+            }
+
+            // New content: let video play forward with blur for another chunk
+            const rewind = settings.rewindSeconds || 10;
+            const nextEnd = chunkEnd + rewind;
+            reviewState = "newcontent";
+
+            if (nextEnd > videoElement.duration) {
+              intensiveMode = false;
+              reviewState = "idle";
+              return;
+            }
+
+            reviewCheckInterval = setInterval(() => {
+              if (reviewState === "newcontent" && videoElement.currentTime >= nextEnd) {
+                clearReviewInterval();
+                // Now loop that new chunk
+                runIntensiveChunk(chunkEnd, nextEnd);
+              }
+            }, 200);
+          }
+        }, 200);
+      }
+    }, 200);
+  }
+
+  function startReviewLoop() {
+    if (!videoElement) return;
+
+    if (reviewState !== "idle") {
+      cancelReviewLoop();
+      setBlur(true);
+      return;
+    }
+
+    if (!visible) show();
+
+    const rewind = settings.rewindSeconds || 10;
+    const endTime = videoElement.currentTime;
+    const startTime = Math.max(0, endTime - rewind);
+
+    videoElement.currentTime = startTime;
+    setBlur(false);
+    videoElement.play();
+    reviewState = "pass1";
+
+    reviewCheckInterval = setInterval(() => {
+      if (reviewState === "pass1" && videoElement.currentTime >= endTime) {
+        clearReviewInterval();
+        videoElement.currentTime = startTime;
+        setBlur(true);
+        videoElement.play();
+        reviewState = "pass2";
+
+        reviewCheckInterval = setInterval(() => {
+          if (reviewState === "pass2" && videoElement.currentTime >= endTime) {
+            clearReviewInterval();
             reviewState = "idle";
           }
         }, 200);
@@ -253,12 +337,29 @@
     }, 200);
   }
 
-  function cancelReviewLoop() {
-    if (reviewCheckInterval) {
-      clearInterval(reviewCheckInterval);
-      reviewCheckInterval = null;
+  function startIntensiveMode() {
+    if (!videoElement) return;
+
+    if (intensiveMode) {
+      cancelReviewLoop();
+      show();
+      return;
     }
+
+    intensiveMode = true;
+    if (!visible) show();
+
+    const rewind = settings.rewindSeconds || 10;
+    const currentTime = videoElement.currentTime;
+    const chunkStart = Math.max(0, currentTime - rewind);
+
+    runIntensiveChunk(chunkStart, currentTime);
+  }
+
+  function cancelReviewLoop() {
+    clearReviewInterval();
     reviewState = "idle";
+    intensiveMode = false;
   }
 
   let repositionTimer = null;
@@ -268,12 +369,21 @@
     repositionTimer = setTimeout(() => positionOverlay(), 50);
   }
 
-  chrome.runtime.onMessage.addListener((message) => {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "toggle-blur") {
       cancelReviewLoop();
       toggle();
     }
     if (message.action === "review-loop") startReviewLoop();
+    if (message.action === "start-intensive") startIntensiveMode();
+    if (message.action === "stop-intensive") {
+      cancelReviewLoop();
+      setBlur(true);
+    }
+    if (message.action === "get-intensive-state") {
+      sendResponse({ intensive: intensiveMode });
+      return true;
+    }
     if (message.action === "update-settings") {
       loadSettings().then(() => {
         if (overlay) {

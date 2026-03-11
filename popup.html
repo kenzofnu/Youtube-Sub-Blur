@@ -196,6 +196,15 @@ input[type="range"]::-webkit-slider-thumb {
     </div>
 
     <div class="setting-group">
+      <label class="toggle-row">
+        <span>Auto Watch & Review</span>
+        <input type="checkbox" id="intensiveMode">
+        <span class="toggle-slider"></span>
+      </label>
+      <p class="hint">Listen with blur, then replay with subs revealed</p>
+    </div>
+
+    <div class="setting-group">
       <label for="blurAmount">Blur Strength</label>
       <div class="slider-row">
         <input type="range" id="blurAmount" min="1" max="40" value="15">
@@ -215,8 +224,9 @@ input[type="range"]::-webkit-slider-thumb {
     <div class="setting-group">
       <label>Hotkeys</label>
       <p class="hotkey-display">Alt + B <span style="color:#888;font-weight:400">Toggle blur</span></p>
-      <p class="hotkey-display" style="margin-top:6px">Alt + R <span style="color:#888;font-weight:400">Review loop</span></p>
-      <p class="hint">Change in <a id="shortcutsLink" href="#">chrome://extensions/shortcuts</a></p>
+      <p class="hotkey-display" style="margin-top:6px">Alt + R <span style="color:#888;font-weight:400">Watch & Review</span></p>
+      <p class="hint">Rewinds and replays with subs, then again without</p>
+      <p class="hint"><a id="shortcutsLink" href="#">Change shortcuts</a></p>
     </div>
 
     <div class="setting-group">
