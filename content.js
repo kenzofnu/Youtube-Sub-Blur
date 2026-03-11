@@ -4,6 +4,7 @@
     blurAmount: 15,
     boxPosition: null,
     boxSize: null,
+    rewindSeconds: 10,
   };
 
   let overlay = null;
@@ -214,6 +215,52 @@
     else show();
   }
 
+  // Review loop state
+  let reviewState = "idle"; // idle | pass1 | pass2
+  let reviewReturnTime = 0;
+  let reviewCheckInterval = null;
+
+  function startReviewLoop() {
+    if (!videoElement || reviewState !== "idle") return;
+    if (!visible) show();
+
+    reviewReturnTime = videoElement.currentTime;
+    const rewind = settings.rewindSeconds || 10;
+    videoElement.currentTime = Math.max(0, reviewReturnTime - rewind);
+
+    // Pass 1: subs visible (blur off), paused
+    hide();
+    videoElement.pause();
+    reviewState = "pass1";
+
+    reviewCheckInterval = setInterval(() => {
+      if (reviewState === "pass1" && videoElement.currentTime >= reviewReturnTime) {
+        // Pass 1 done, start pass 2: blur on, rewind again
+        clearInterval(reviewCheckInterval);
+        videoElement.currentTime = Math.max(0, reviewReturnTime - rewind);
+        show();
+        videoElement.pause();
+        reviewState = "pass2";
+
+        reviewCheckInterval = setInterval(() => {
+          if (reviewState === "pass2" && videoElement.currentTime >= reviewReturnTime) {
+            clearInterval(reviewCheckInterval);
+            reviewCheckInterval = null;
+            reviewState = "idle";
+          }
+        }, 200);
+      }
+    }, 200);
+  }
+
+  function cancelReviewLoop() {
+    if (reviewCheckInterval) {
+      clearInterval(reviewCheckInterval);
+      reviewCheckInterval = null;
+    }
+    reviewState = "idle";
+  }
+
   let repositionTimer = null;
   function onVideoResize() {
     if (!visible || !overlay) return;
@@ -222,7 +269,11 @@
   }
 
   chrome.runtime.onMessage.addListener((message) => {
-    if (message.action === "toggle-blur") toggle();
+    if (message.action === "toggle-blur") {
+      cancelReviewLoop();
+      toggle();
+    }
+    if (message.action === "review-loop") startReviewLoop();
     if (message.action === "update-settings") {
       loadSettings().then(() => {
         if (overlay) {

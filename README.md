@@ -14,6 +14,7 @@ Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for la
 - Scales between windowed, theater, and fullscreen
 - Adjustable blur strength (1-40)
 - Option to auto-show on every video
+- **Review loop** (**Alt + R**) -- rewinds and plays the segment twice: once with subs visible, once with blur on, so you can check your comprehension
 
 ## Settings
 
@@ -23,6 +24,7 @@ Click the extension icon to open the popup:
 
 - **Default On** -- auto-show the blur box when a video loads
 - **Blur Strength** -- how strong the blur effect is
+- **Rewind Duration** -- how far back the review loop rewinds (3-30s)
 - **Reset Box Position** -- restore default position
 
 To change the hotkey, go to `chrome://extensions/shortcuts`.

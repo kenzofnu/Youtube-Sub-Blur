@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Sub Blur",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Blur hard subtitles on YouTube videos for language immersion",
   "permissions": ["storage"],
   "commands": {
@@ -10,6 +10,12 @@
         "default": "Alt+B"
       },
       "description": "Toggle subtitle blur overlay"
+    },
+    "review-loop": {
+      "suggested_key": {
+        "default": "Alt+R"
+      },
+      "description": "Review loop: rewind and check subtitles"
     }
   },
   "background": {

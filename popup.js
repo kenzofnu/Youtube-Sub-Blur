@@ -3,11 +3,14 @@ const DEFAULTS = {
   blurAmount: 15,
   boxPosition: null,
   boxSize: null,
+  rewindSeconds: 10,
 };
 
 const defaultOnEl = document.getElementById("defaultOn");
 const blurAmountEl = document.getElementById("blurAmount");
 const blurValueEl = document.getElementById("blurValue");
+const rewindEl = document.getElementById("rewindSeconds");
+const rewindValueEl = document.getElementById("rewindValue");
 const resetBoxEl = document.getElementById("resetBox");
 const statusEl = document.getElementById("status");
 const shortcutsLink = document.getElementById("shortcutsLink");
@@ -37,6 +40,8 @@ chrome.storage.sync.get(DEFAULTS, (settings) => {
   defaultOnEl.checked = settings.defaultOn;
   blurAmountEl.value = settings.blurAmount;
   blurValueEl.textContent = settings.blurAmount;
+  rewindEl.value = settings.rewindSeconds;
+  rewindValueEl.textContent = settings.rewindSeconds + "s";
 });
 
 defaultOnEl.addEventListener("change", () => {
@@ -49,6 +54,14 @@ blurAmountEl.addEventListener("input", () => {
 
 blurAmountEl.addEventListener("change", () => {
   save({ blurAmount: parseInt(blurAmountEl.value) });
+});
+
+rewindEl.addEventListener("input", () => {
+  rewindValueEl.textContent = rewindEl.value + "s";
+});
+
+rewindEl.addEventListener("change", () => {
+  save({ rewindSeconds: parseInt(rewindEl.value) });
 });
 
 resetBoxEl.addEventListener("click", () => {
