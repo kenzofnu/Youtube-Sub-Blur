@@ -10,7 +10,7 @@
   display: none;
   box-sizing: border-box;
   transition: border-color 0.15s ease;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 #yt-sub-blur-overlay:hover {
