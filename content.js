@@ -217,6 +217,7 @@
     await loadSettings();
     createOverlay();
     overlay.style.display = "block";
+    setBlur(true);
     visible = true;
   }
 
