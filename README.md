@@ -50,6 +50,7 @@ Click the extension icon to open the popup:
 - **Auto Watch & Review** -- enable continuous review loop mode
 - **Blur Strength** -- how strong the blur effect is (1-40)
 - **Rewind Duration** -- how far back the review loop rewinds (3-30s)
+- **2-Pass Review** -- on = rewind with subs then replay blurred (default); off = rewind with subs only, then continue
 - **Anki Screenshot Field** -- Anki field name for the video screenshot (default: `Picture`)
 - **Anki Audio Field** -- Anki field name for sentence audio (default: `SentenceAudio`)
 - **Audio Clip Duration** -- seconds of audio to capture (3-15s)
