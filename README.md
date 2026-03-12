@@ -33,7 +33,7 @@ Hotkeys can be changed at `chrome://extensions/shortcuts`.
 
 ### Chrome Web Store
 
-Coming soon.
+[YouTube Sub Blur on Chrome Web Store](https://chromewebstore.google.com/detail/youtube-sub-blur/hmmnmcgcofibhdgiebicacdpihhcplgl)
 
 ### Manual
 
