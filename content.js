@@ -232,10 +232,12 @@
       overlay.style.backdropFilter = `blur(${settings.blurAmount}px)`;
       overlay.style.webkitBackdropFilter = `blur(${settings.blurAmount}px)`;
       overlay.style.background = "rgba(0, 0, 0, 0.08)";
+      overlay.style.border = "";
     } else {
       overlay.style.backdropFilter = "none";
       overlay.style.webkitBackdropFilter = "none";
       overlay.style.background = "transparent";
+      overlay.style.border = "none";
     }
   }
 
@@ -638,6 +640,11 @@
     }
 
     if (ocrBlurWasOff) setBlur(false);
+
+    if (videoElement && !videoElement.paused) {
+      videoElement.pause();
+      ocrPausedVideo = true;
+    }
 
     showOcrText("Recognizing…");
 
