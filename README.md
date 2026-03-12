@@ -138,7 +138,6 @@ You can change the field names in the extension popup to match your note type.
 
 1. Remove the extension from `chrome://extensions/`
 2. Delete `start_ocr.vbs` from `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
-3. `pip uninstall meikiocr owocr yt-dlp`
 
 ## Privacy
 
