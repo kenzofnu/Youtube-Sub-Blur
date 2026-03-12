@@ -618,7 +618,10 @@
     ocrBlurWasOff = !visible;
 
     if (!videoElement || !overlay || !visible) {
-      if (!visible) await show();
+      if (!visible) {
+        await show();
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      }
       if (!overlay) return;
     }
 
