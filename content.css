@@ -90,3 +90,28 @@
 .ysb-resize-ne::after { top: 0; right: 0; }
 .ysb-resize-sw::after { bottom: 0; left: 0; }
 .ysb-resize-se::after { bottom: 0; right: 0; }
+
+/* OCR text overlay */
+#ysb-ocr-overlay {
+  position: absolute;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.88);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1.5;
+  padding: 8px 14px;
+  border-radius: 4px;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  font-family: "Noto Sans JP", "Yu Gothic", "Hiragino Sans", "Meiryo", sans-serif;
+  border: 2px solid rgba(59, 130, 246, 0.8);
+  box-sizing: border-box;
+}

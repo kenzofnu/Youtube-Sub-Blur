@@ -4,6 +4,9 @@ const DEFAULTS = {
   boxPosition: null,
   boxSize: null,
   rewindSeconds: 10,
+  ankiField: "Picture",
+  ankiAudioField: "SentenceAudio",
+  audioSeconds: 5,
 };
 
 const defaultOnEl = document.getElementById("defaultOn");
@@ -12,6 +15,10 @@ const blurAmountEl = document.getElementById("blurAmount");
 const blurValueEl = document.getElementById("blurValue");
 const rewindEl = document.getElementById("rewindSeconds");
 const rewindValueEl = document.getElementById("rewindValue");
+const ankiFieldEl = document.getElementById("ankiField");
+const ankiAudioFieldEl = document.getElementById("ankiAudioField");
+const audioSecondsEl = document.getElementById("audioSeconds");
+const audioValueEl = document.getElementById("audioValue");
 const resetBoxEl = document.getElementById("resetBox");
 const statusEl = document.getElementById("status");
 const shortcutsLink = document.getElementById("shortcutsLink");
@@ -43,6 +50,10 @@ chrome.storage.sync.get(DEFAULTS, (settings) => {
   blurValueEl.textContent = settings.blurAmount;
   rewindEl.value = settings.rewindSeconds;
   rewindValueEl.textContent = settings.rewindSeconds + "s";
+  ankiFieldEl.value = settings.ankiField || "Picture";
+  ankiAudioFieldEl.value = settings.ankiAudioField || "SentenceAudio";
+  audioSecondsEl.value = settings.audioSeconds || 5;
+  audioValueEl.textContent = (settings.audioSeconds || 5) + "s";
 });
 
 defaultOnEl.addEventListener("change", () => {
@@ -82,6 +93,24 @@ rewindEl.addEventListener("input", () => {
 
 rewindEl.addEventListener("change", () => {
   save({ rewindSeconds: parseInt(rewindEl.value) });
+});
+
+ankiFieldEl.addEventListener("change", () => {
+  const val = ankiFieldEl.value.trim();
+  if (val) save({ ankiField: val });
+});
+
+ankiAudioFieldEl.addEventListener("change", () => {
+  const val = ankiAudioFieldEl.value.trim();
+  if (val) save({ ankiAudioField: val });
+});
+
+audioSecondsEl.addEventListener("input", () => {
+  audioValueEl.textContent = audioSecondsEl.value + "s";
+});
+
+audioSecondsEl.addEventListener("change", () => {
+  save({ audioSeconds: parseInt(audioSecondsEl.value) });
 });
 
 resetBoxEl.addEventListener("click", () => {

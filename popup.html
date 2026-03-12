@@ -222,10 +222,34 @@ input[type="range"]::-webkit-slider-thumb {
     </div>
 
     <div class="setting-group">
+      <label for="ankiField">Anki Screenshot Field</label>
+      <input type="text" id="ankiField" value="Picture" spellcheck="false"
+        style="width:100%;padding:6px 10px;font-size:13px;background:#2a2a3e;color:#e0e0e0;border:1px solid #3a3a50;border-radius:6px;outline:none;font-family:inherit;">
+      <p class="hint">Anki field name to auto-insert video screenshot into</p>
+    </div>
+
+    <div class="setting-group">
+      <label for="ankiAudioField">Anki Audio Field</label>
+      <input type="text" id="ankiAudioField" value="SentenceAudio" spellcheck="false"
+        style="width:100%;padding:6px 10px;font-size:13px;background:#2a2a3e;color:#e0e0e0;border:1px solid #3a3a50;border-radius:6px;outline:none;font-family:inherit;">
+      <p class="hint">Anki field name for sentence audio (requires yt-dlp + ffmpeg)</p>
+    </div>
+
+    <div class="setting-group">
+      <label for="audioSeconds">Audio Clip Duration</label>
+      <div class="slider-row">
+        <input type="range" id="audioSeconds" min="3" max="15" value="5">
+        <span id="audioValue" class="slider-value">5s</span>
+      </div>
+      <p class="hint">Seconds of audio to capture before the subtitle</p>
+    </div>
+
+    <div class="setting-group">
       <label>Hotkeys</label>
       <p class="hotkey-display">Alt + B <span style="color:#888;font-weight:400">Toggle blur</span></p>
       <p class="hotkey-display" style="margin-top:6px">Alt + R <span style="color:#888;font-weight:400">Watch & Review</span></p>
-      <p class="hint">Rewinds and replays with subs, then again without</p>
+      <p class="hotkey-display" style="margin-top:6px">Alt + M <span style="color:#888;font-weight:400">Mine subtitle (OCR)</span></p>
+      <p class="hint">Extract text from blur area for Yomitan lookup</p>
       <p class="hint"><a id="shortcutsLink" href="#">Change shortcuts</a></p>
     </div>
 

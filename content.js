@@ -5,6 +5,9 @@
     boxPosition: null,
     boxSize: null,
     rewindSeconds: 10,
+    ankiField: "Picture",
+    ankiAudioField: "SentenceAudio",
+    audioSeconds: 5,
   };
 
   let overlay = null;
@@ -15,6 +18,8 @@
   let dragOffset = { x: 0, y: 0 };
   let resizeEdge = null;
   let videoElement = null;
+  let ocrOverlay = null;
+  let ocrDismissTimer = null;
 
   function loadSettings() {
     return new Promise((resolve) => {
@@ -241,6 +246,7 @@
   let reviewState = "idle"; // idle | pass1 | pass2 | newcontent
   let reviewCheckInterval = null;
   let intensiveMode = false;
+  let programmaticSeek = false;
 
   function clearReviewInterval() {
     if (reviewCheckInterval) {
@@ -249,9 +255,14 @@
     }
   }
 
+  function seekTo(time) {
+    programmaticSeek = true;
+    videoElement.currentTime = time;
+    setTimeout(() => { programmaticSeek = false; }, 100);
+  }
+
   function runIntensiveChunk(chunkStart, chunkEnd) {
-    // Pass 1: rewind to chunkStart, unblur, play (read subs)
-    videoElement.currentTime = chunkStart;
+    seekTo(chunkStart);
     setBlur(false);
     videoElement.play();
     reviewState = "pass1";
@@ -260,8 +271,7 @@
       if (reviewState === "pass1" && videoElement.currentTime >= chunkEnd) {
         clearReviewInterval();
 
-        // Pass 2: rewind to chunkStart, blur, play (listen)
-        videoElement.currentTime = chunkStart;
+        seekTo(chunkStart);
         setBlur(true);
         videoElement.play();
         reviewState = "pass2";
@@ -314,7 +324,7 @@
     const endTime = videoElement.currentTime;
     const startTime = Math.max(0, endTime - rewind);
 
-    videoElement.currentTime = startTime;
+    seekTo(startTime);
     setBlur(false);
     videoElement.play();
     reviewState = "pass1";
@@ -322,7 +332,7 @@
     reviewCheckInterval = setInterval(() => {
       if (reviewState === "pass1" && videoElement.currentTime >= endTime) {
         clearReviewInterval();
-        videoElement.currentTime = startTime;
+        seekTo(startTime);
         setBlur(true);
         videoElement.play();
         reviewState = "pass2";
@@ -358,8 +368,265 @@
 
   function cancelReviewLoop() {
     clearReviewInterval();
+    if (reviewState !== "idle") setBlur(true);
     reviewState = "idle";
     intensiveMode = false;
+  }
+
+  // --- AnkiConnect ---
+
+  async function ankiConnect(action, params = {}) {
+    const data = await chrome.runtime.sendMessage({
+      action: "anki-connect",
+      ankiAction: action,
+      params,
+    });
+    if (data.error) throw new Error(data.error);
+    return data.result;
+  }
+
+  async function getLatestNoteId() {
+    const noteIds = await ankiConnect("findNotes", { query: "added:1" });
+    if (!noteIds || noteIds.length === 0) return null;
+    return Math.max(...noteIds);
+  }
+
+  function captureVideoFrame() {
+    try {
+      const video = findVideo();
+      if (!video || video.videoWidth === 0) return null;
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0);
+      return canvas.toDataURL("image/jpeg", 0.92);
+    } catch (e) {
+      console.warn("[YSB] captureVideoFrame failed:", e);
+      return null;
+    }
+  }
+
+  let ankiPollInterval = null;
+
+  function stopAnkiPoll() {
+    if (ankiPollInterval) {
+      clearInterval(ankiPollInterval);
+      ankiPollInterval = null;
+    }
+  }
+
+  async function fetchSentenceAudio(videoUrl, captureTime) {
+    const duration = settings.audioSeconds || 5;
+    const tail = Math.min(2, duration * 0.3);
+    const start = Math.max(0, captureTime - duration + tail);
+    const end = captureTime + tail;
+    try {
+      const data = await chrome.runtime.sendMessage({
+        action: "fetch-audio",
+        url: videoUrl,
+        start,
+        end,
+      });
+      if (data.error) throw new Error(data.error);
+      return data.audio || null;
+    } catch (e) {
+      console.warn("[YSB] Audio extraction failed:", e.message);
+      return null;
+    }
+  }
+
+  async function startAnkiPoll(screenshotDataUrl, audioContext) {
+    stopAnkiPoll();
+
+    let baselineId;
+    try {
+      baselineId = await getLatestNoteId();
+      console.log("[YSB] Anki poll started, baseline note ID:", baselineId);
+    } catch (e) {
+      console.warn("[YSB] AnkiConnect not reachable:", e.message);
+      return;
+    }
+
+    // Start fetching audio in the background immediately
+    let audioPromise = null;
+    if (audioContext) {
+      audioPromise = fetchSentenceAudio(audioContext.url, audioContext.time);
+    }
+
+    const picField = settings.ankiField || "Picture";
+    const audioField = settings.ankiAudioField || "SentenceAudio";
+    let elapsed = 0;
+    const POLL_MS = 500;
+    const TIMEOUT_MS = 60000;
+
+    ankiPollInterval = setInterval(async () => {
+      elapsed += POLL_MS;
+      if (elapsed > TIMEOUT_MS) {
+        console.log("[YSB] Anki poll timed out");
+        stopAnkiPoll();
+        return;
+      }
+
+      try {
+        const latestId = await getLatestNoteId();
+        if (latestId && latestId !== baselineId) {
+          stopAnkiPoll();
+          console.log("[YSB] New card detected:", latestId);
+
+          const imgFile = `ysb_${Date.now()}.jpg`;
+          const imgB64 = screenshotDataUrl.replace(/^data:image\/\w+;base64,/, "");
+
+          await ankiConnect("storeMediaFile", { filename: imgFile, data: imgB64 });
+
+          const fields = { [picField]: `<img src="${imgFile}">` };
+
+          if (audioPromise) {
+            const audioB64 = await audioPromise;
+            if (audioB64) {
+              const audioFile = `ysb_${Date.now()}.mp3`;
+              await ankiConnect("storeMediaFile", { filename: audioFile, data: audioB64 });
+              fields[audioField] = `[sound:${audioFile}]`;
+              console.log("[YSB] Audio attached to card");
+            }
+          }
+
+          await ankiConnect("updateNoteFields", {
+            note: { id: latestId, fields },
+          });
+          console.log("[YSB] Media attached to card");
+        }
+      } catch (e) {
+        console.warn("[YSB] Anki poll error:", e.message);
+      }
+    }, POLL_MS);
+  }
+
+  // --- OCR subtitle mining ---
+
+  function captureBlurBoxArea() {
+    const video = findVideo();
+    if (!video || !overlay) return null;
+
+    const videoRect = video.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
+
+    const scaleX = video.videoWidth / videoRect.width;
+    const scaleY = video.videoHeight / videoRect.height;
+
+    const sx = Math.max(0, (overlayRect.left - videoRect.left) * scaleX);
+    const sy = Math.max(0, (overlayRect.top - videoRect.top) * scaleY);
+    const sw = Math.min(video.videoWidth - sx, overlayRect.width * scaleX);
+    const sh = Math.min(video.videoHeight - sy, overlayRect.height * scaleY);
+
+    if (sw <= 0 || sh <= 0) return null;
+
+    const UPSCALE = 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = sw * UPSCALE;
+    canvas.height = sh * UPSCALE;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL("image/png");
+  }
+
+  let ocrPausedVideo = false;
+  let ocrBlurWasOff = false;
+
+  function showOcrText(text, pauseVideo) {
+    removeOcrOverlay();
+    if (!text || !overlay) return;
+
+    ocrOverlay = document.createElement("div");
+    ocrOverlay.id = "ysb-ocr-overlay";
+    ocrOverlay.textContent = text;
+
+    const container = getVideoContainer();
+    if (container) {
+      container.appendChild(ocrOverlay);
+      ocrOverlay.style.left = overlay.style.left;
+      ocrOverlay.style.top = overlay.style.top;
+      ocrOverlay.style.width = overlay.style.width;
+      ocrOverlay.style.minHeight = overlay.style.height;
+    }
+
+    if (pauseVideo && videoElement) {
+      if (!videoElement.paused) videoElement.pause();
+      ocrPausedVideo = true;
+      const onPlay = () => {
+        videoElement.removeEventListener("play", onPlay);
+        removeOcrOverlay();
+      };
+      videoElement.addEventListener("play", onPlay);
+    }
+  }
+
+  function removeOcrOverlay() {
+    clearTimeout(ocrDismissTimer);
+    ocrDismissTimer = null;
+    if (ocrOverlay) {
+      ocrOverlay.remove();
+      ocrOverlay = null;
+    }
+    if (ocrBlurWasOff) {
+      hide();
+      ocrBlurWasOff = false;
+    }
+    if (ocrPausedVideo && videoElement) {
+      videoElement.play();
+      ocrPausedVideo = false;
+    }
+  }
+
+  async function mineSubtitle() {
+    ocrBlurWasOff = !visible;
+
+    if (!videoElement || !overlay || !visible) {
+      if (!visible) await show();
+      if (!overlay) return;
+    }
+
+    if (ocrOverlay) {
+      stopAnkiPoll();
+      removeOcrOverlay();
+      return;
+    }
+
+    if (ocrBlurWasOff) setBlur(false);
+
+    showOcrText("Recognizing…");
+
+    const imageData = captureBlurBoxArea();
+    if (!imageData) {
+      showOcrText("Could not capture frame");
+      return;
+    }
+
+    const screenshot = captureVideoFrame();
+    const currentTime = videoElement ? videoElement.currentTime : 0;
+    const videoUrl = window.location.href;
+
+    try {
+      const resp = await fetch("http://127.0.0.1:7331/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imageData }),
+      });
+      const result = await resp.json();
+      if (result && result.text) {
+        showOcrText(result.text, true);
+        if (screenshot) {
+          startAnkiPoll(screenshot, { url: videoUrl, time: currentTime });
+        }
+      } else {
+        showOcrText("No text detected", false);
+      }
+    } catch (e) {
+      showOcrText("OCR server not running — start ocr_server.py", false);
+    }
   }
 
   let repositionTimer = null;
@@ -372,9 +639,11 @@
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "toggle-blur") {
       cancelReviewLoop();
+      removeOcrOverlay();
       toggle();
     }
     if (message.action === "review-loop") startReviewLoop();
+    if (message.action === "mine-subtitle") mineSubtitle();
     if (message.action === "start-intensive") startIntensiveMode();
     if (message.action === "stop-intensive") {
       cancelReviewLoop();
@@ -396,11 +665,18 @@
 
   const resizeObserver = new ResizeObserver(() => onVideoResize());
 
+  function onUserSeek() {
+    if (!programmaticSeek && reviewState !== "idle") {
+      cancelReviewLoop();
+    }
+  }
+
   function watchForVideo() {
     const observer = new MutationObserver(async () => {
       const video = findVideo();
       if (video && video !== videoElement) {
         videoElement = video;
+        videoElement.addEventListener("seeking", onUserSeek);
         resizeObserver.observe(videoElement);
         if (visible) {
           await loadSettings();
@@ -414,9 +690,11 @@
   }
 
   async function handleNavigation() {
+    removeOcrOverlay();
     await loadSettings();
     videoElement = findVideo();
     if (videoElement) {
+      videoElement.addEventListener("seeking", onUserSeek);
       resizeObserver.observe(videoElement);
       if (visible || settings.defaultOn) {
         if (overlay) {
