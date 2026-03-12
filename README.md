@@ -134,6 +134,12 @@ You can change the field names in the extension popup to match your note type.
 3. Hover the text with Yomitan and mine the word to Anki
 4. Press **Spacebar** to resume -- the screenshot and sentence audio are automatically attached to your new card
 
+## Uninstall
+
+1. Remove the extension from `chrome://extensions/`
+2. Delete `start_ocr.vbs` from `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
+3. `pip uninstall meikiocr owocr yt-dlp`
+
 ## Privacy
 
 No data is collected. The extension only stores your preferences locally via Chrome's storage API. The OCR server runs entirely on your machine. See [Privacy Policy](PRIVACY_POLICY.md).
