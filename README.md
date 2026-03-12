@@ -15,7 +15,7 @@ Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for la
 Toggle a movable, resizable blur box over hard-coded subtitles so you can focus on listening.
 
 
-https://github.com/user-attachments/assets/6eecd833-cd5d-4dec-be5c-8d53a9b295e2
+https://github.com/user-attachments/assets/16b5a235-e112-4157-8162-b41e5636a451
 
 
 
@@ -24,7 +24,7 @@ https://github.com/user-attachments/assets/6eecd833-cd5d-4dec-be5c-8d53a9b295e2
 Rewinds and replays a segment with subs visible, then blurred to test your listening comprehension.
 
 
-https://github.com/user-attachments/assets/91f55c7f-8903-4ab0-a4c1-aca74f9186b9
+https://github.com/user-attachments/assets/1c18e9e2-f024-4802-b0d2-77247e1ae87b
 
 
 
@@ -32,7 +32,9 @@ https://github.com/user-attachments/assets/91f55c7f-8903-4ab0-a4c1-aca74f9186b9
 
 Extract subtitle text with OCR for Yomitan lookup. Screenshot and sentence audio are automatically attached to your Anki card.
 
-https://github.com/user-attachments/assets/efb369d9-fe5b-43b2-b787-2e7035a4c55a
+
+https://github.com/user-attachments/assets/5722ca03-b9e4-4d97-9a50-5fe40b9b0192
+
 
 
 ### More
