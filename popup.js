@@ -7,6 +7,7 @@ const DEFAULTS = {
   ankiField: "Picture",
   ankiAudioField: "SentenceAudio",
   audioSeconds: 5,
+  reviewPasses: 2,
 };
 
 const defaultOnEl = document.getElementById("defaultOn");
@@ -19,6 +20,7 @@ const ankiFieldEl = document.getElementById("ankiField");
 const ankiAudioFieldEl = document.getElementById("ankiAudioField");
 const audioSecondsEl = document.getElementById("audioSeconds");
 const audioValueEl = document.getElementById("audioValue");
+const twoPassEl = document.getElementById("twoPassReview");
 const resetBoxEl = document.getElementById("resetBox");
 const statusEl = document.getElementById("status");
 const shortcutsLink = document.getElementById("shortcutsLink");
@@ -54,10 +56,15 @@ chrome.storage.sync.get(DEFAULTS, (settings) => {
   ankiAudioFieldEl.value = settings.ankiAudioField || "SentenceAudio";
   audioSecondsEl.value = settings.audioSeconds || 5;
   audioValueEl.textContent = (settings.audioSeconds || 5) + "s";
+  twoPassEl.checked = (settings.reviewPasses || 2) === 2;
 });
 
 defaultOnEl.addEventListener("change", () => {
   save({ defaultOn: defaultOnEl.checked });
+});
+
+twoPassEl.addEventListener("change", () => {
+  save({ reviewPasses: twoPassEl.checked ? 2 : 1 });
 });
 
 intensiveEl.addEventListener("change", () => {

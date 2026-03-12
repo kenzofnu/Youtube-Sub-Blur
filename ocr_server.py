@@ -57,29 +57,34 @@ def extract_audio(url, start, end):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         out_path = os.path.join(tmpdir, "clip.mp3")
+        section = f"*{start:.1f}-{end:.1f}"
 
-        # yt-dlp: get direct audio stream URL
         result = subprocess.run(
-            ["yt-dlp", "-f", "ba", "--get-url", "--no-warnings", url],
-            capture_output=True, text=True, timeout=15,
+            [
+                "yt-dlp",
+                "-f", "ba",
+                "--no-warnings",
+                "--download-sections", section,
+                "--force-keyframes-at-cuts",
+                "--downloader", "native",
+                "-x", "--audio-format", "mp3",
+                "-o", out_path,
+                url,
+            ],
+            capture_output=True, text=True, timeout=60,
         )
         if result.returncode != 0:
             raise RuntimeError(f"yt-dlp failed: {result.stderr.strip()}")
-        stream_url = result.stdout.strip()
 
-        # ffmpeg: extract the segment
-        subprocess.run(
-            [
-                "ffmpeg", "-y",
-                "-ss", str(start),
-                "-i", stream_url,
-                "-t", str(duration),
-                "-vn", "-acodec", "libmp3lame", "-q:a", "4",
-                out_path,
-            ],
-            capture_output=True, timeout=30,
-            check=True,
-        )
+        # yt-dlp may append format suffix to filename
+        if not os.path.exists(out_path):
+            for f in os.listdir(tmpdir):
+                if f.endswith((".mp3", ".m4a", ".webm", ".ogg", ".opus")):
+                    out_path = os.path.join(tmpdir, f)
+                    break
+
+        if not os.path.exists(out_path):
+            raise RuntimeError("Audio file was not created")
 
         with open(out_path, "rb") as f:
             return base64.b64encode(f.read()).decode()

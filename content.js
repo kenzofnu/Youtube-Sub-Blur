@@ -8,6 +8,7 @@
     ankiField: "Picture",
     ankiAudioField: "SentenceAudio",
     audioSeconds: 5,
+    reviewPasses: 2,
   };
 
   let overlay = null;
@@ -271,6 +272,31 @@
       if (reviewState === "pass1" && videoElement.currentTime >= chunkEnd) {
         clearReviewInterval();
 
+        if (settings.reviewPasses === 1) {
+          setBlur(true);
+          if (!intensiveMode) {
+            reviewState = "idle";
+            return;
+          }
+          const rewind = settings.rewindSeconds || 10;
+          const nextEnd = chunkEnd + rewind;
+          reviewState = "newcontent";
+
+          if (nextEnd > videoElement.duration) {
+            intensiveMode = false;
+            reviewState = "idle";
+            return;
+          }
+
+          reviewCheckInterval = setInterval(() => {
+            if (reviewState === "newcontent" && videoElement.currentTime >= nextEnd) {
+              clearReviewInterval();
+              runIntensiveChunk(chunkEnd, nextEnd);
+            }
+          }, 200);
+          return;
+        }
+
         seekTo(chunkStart);
         setBlur(true);
         videoElement.play();
@@ -285,7 +311,6 @@
               return;
             }
 
-            // New content: let video play forward with blur for another chunk
             const rewind = settings.rewindSeconds || 10;
             const nextEnd = chunkEnd + rewind;
             reviewState = "newcontent";
@@ -299,7 +324,6 @@
             reviewCheckInterval = setInterval(() => {
               if (reviewState === "newcontent" && videoElement.currentTime >= nextEnd) {
                 clearReviewInterval();
-                // Now loop that new chunk
                 runIntensiveChunk(chunkEnd, nextEnd);
               }
             }, 200);
@@ -332,6 +356,14 @@
     reviewCheckInterval = setInterval(() => {
       if (reviewState === "pass1" && videoElement.currentTime >= endTime) {
         clearReviewInterval();
+
+        if (settings.reviewPasses === 1) {
+          setBlur(true);
+          reviewState = "idle";
+          videoElement.play();
+          return;
+        }
+
         seekTo(startTime);
         setBlur(true);
         videoElement.play();
