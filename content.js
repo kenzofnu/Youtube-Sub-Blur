@@ -633,6 +633,11 @@
 
     const imageData = captureBlurBoxArea();
     if (!imageData) {
+      if (ocrBlurWasOff) {
+        setBlur(true);
+        hide();
+        ocrBlurWasOff = false;
+      }
       showOcrText("Could not capture frame");
       return;
     }
