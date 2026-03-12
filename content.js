@@ -552,7 +552,10 @@
     const sw = Math.min(video.videoWidth - sx, overlayRect.width * scaleX);
     const sh = Math.min(video.videoHeight - sy, overlayRect.height * scaleY);
 
-    if (sw <= 0 || sh <= 0) return null;
+    if (sw <= 0 || sh <= 0) {
+      console.warn("[YSB] captureBlurBoxArea: invalid dimensions", { sx, sy, sw, sh, videoW: video.videoWidth, videoH: video.videoHeight, overlayRect, videoRect });
+      return null;
+    }
 
     const UPSCALE = 2;
     const canvas = document.createElement("canvas");
@@ -570,12 +573,15 @@
   let ocrBlurWasOff = false;
 
   function showOcrText(text, pauseVideo) {
-    removeOcrOverlay();
+    if (ocrOverlay) {
+      ocrOverlay.remove();
+      ocrOverlay = null;
+    }
     if (!text || !overlay) return;
 
     ocrOverlay = document.createElement("div");
     ocrOverlay.id = "ysb-ocr-overlay";
-    ocrOverlay.textContent = text;
+    ocrOverlay.textContent = text.replace(/\n/g, " ");
 
     const container = getVideoContainer();
     if (container) {

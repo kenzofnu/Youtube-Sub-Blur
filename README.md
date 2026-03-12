@@ -2,22 +2,35 @@
 
 Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for language immersion -- hide distracting hardsubs so you can focus on listening.
 
-![Demo - dark video](screenshots/demo-dark.png)
-
-![Demo - light video](screenshots/demo-light.png)
-
 ## Features
 
-- Toggleable blur overlay with **Alt + B** (customizable)
+### Blur Overlay
+
+Toggle a movable, resizable blur box over hard-coded subtitles so you can focus on listening.
+
+https://github.com/kenzofnu/Youtube-Sub-Blur/raw/main/screenshots/part1.mp4
+
+### Review Mode
+
+Rewinds and replays a segment with subs visible, then blurred to test your listening comprehension.
+
+https://github.com/kenzofnu/Youtube-Sub-Blur/raw/main/screenshots/part2.mp4
+
+### OCR Mining + Anki Integration
+
+Extract subtitle text with OCR for Yomitan lookup. Screenshot and sentence audio are automatically attached to your Anki card.
+
+https://github.com/kenzofnu/Youtube-Sub-Blur/raw/main/screenshots/part3.mp4
+
+### More
+
 - Drag to reposition, drag edges/corners to resize
 - Box position and size saved automatically
 - Scales between windowed, theater, and fullscreen
 - Adjustable blur strength (1-40)
 - Option to auto-show on every video
-- **Review Mode** (**Alt + R**) -- rewinds and plays the segment twice: once with subs visible, once with blur on, so you can check your comprehension
-- **Auto Review Mode** -- continuous mode that automatically loops through the video chunk by chunk
-- **OCR Subtitle Mining** (**Alt + M**) -- extract text from hard-coded subtitles for use with Yomitan
-- **Anki Integration** -- automatically attaches a video screenshot and sentence audio to your Anki cards when mining
+- **Auto Review Mode** -- continuous chunk-by-chunk review
+- 1-pass or 2-pass review mode
 
 ## Hotkeys
 
