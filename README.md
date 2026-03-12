@@ -14,8 +14,8 @@ Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for la
 - Scales between windowed, theater, and fullscreen
 - Adjustable blur strength (1-40)
 - Option to auto-show on every video
-- **Watch & Review** (**Alt + R**) -- rewinds and plays the segment twice: once with subs visible, once with blur on, so you can check your comprehension
-- **Auto Watch & Review** -- continuous mode that automatically loops through the video chunk by chunk
+- **Review Mode** (**Alt + R**) -- rewinds and plays the segment twice: once with subs visible, once with blur on, so you can check your comprehension
+- **Auto Review Mode** -- continuous mode that automatically loops through the video chunk by chunk
 - **OCR Subtitle Mining** (**Alt + M**) -- extract text from hard-coded subtitles for use with Yomitan
 - **Anki Integration** -- automatically attaches a video screenshot and sentence audio to your Anki cards when mining
 
@@ -24,7 +24,7 @@ Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for la
 | Hotkey | Action |
 |--------|--------|
 | Alt + B | Toggle blur overlay |
-| Alt + R | Watch & Review (one-shot rewind loop) |
+| Alt + R | Review Mode (one-shot rewind loop) |
 | Alt + M | Mine subtitle (OCR + Anki screenshot/audio) |
 
 Hotkeys can be changed at `chrome://extensions/shortcuts`.
@@ -47,7 +47,7 @@ Coming soon.
 Click the extension icon to open the popup:
 
 - **Default On** -- auto-show the blur box when a video loads
-- **Auto Watch & Review** -- enable continuous review loop mode
+- **Auto Review Mode** -- enable continuous review loop mode
 - **Blur Strength** -- how strong the blur effect is (1-40)
 - **Rewind Duration** -- how far back the review loop rewinds (3-30s)
 - **2-Pass Review** -- on = rewind with subs then replay blurred (default); off = rewind with subs only, then continue
