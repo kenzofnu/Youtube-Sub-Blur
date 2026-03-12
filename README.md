@@ -58,28 +58,45 @@ Click the extension icon to open the popup:
 
 The blur box works out of the box with no extra setup. The features below are optional and add OCR subtitle extraction with automatic Anki card enrichment (screenshot + sentence audio).
 
-### Requirements
+### Quick setup (Windows)
+
+Run the setup script -- it installs everything and configures auto-start:
+
+```
+setup.bat
+```
+
+Then install [AnkiConnect](https://ankiweb.net/shared/info/2055492159) in Anki: **Tools > Add-ons > Get Add-ons** and paste code `2055492159`.
+
+### Manual setup
+
+<details>
+<summary>Click to expand</summary>
+
+#### Requirements
 
 - [Python 3.10+](https://www.python.org/downloads/)
 - [Anki](https://apps.ankiweb.net/) with [AnkiConnect](https://ankiweb.net/shared/info/2055492159) plugin installed
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (for sentence audio)
 - [ffmpeg](https://ffmpeg.org/) (for sentence audio)
 
-### 1. Install Python dependencies
+#### 1. Install Python dependencies
 
 ```
-pip install meikiocr owocr numpy Pillow
+pip install meikiocr owocr numpy Pillow yt-dlp
 ```
 
-### 2. Install yt-dlp and ffmpeg
+#### 2. Install ffmpeg
+
+Download from [ffmpeg.org](https://ffmpeg.org/download.html) or install via winget:
 
 ```
-pip install yt-dlp
+winget install Gyan.FFmpeg
 ```
 
-For ffmpeg, download from [ffmpeg.org](https://ffmpeg.org/download.html) or install via your package manager. Make sure both `yt-dlp` and `ffmpeg` are available on your PATH.
+Make sure `ffmpeg` is available on your PATH.
 
-### 3. Start the OCR server
+#### 3. Start the OCR server
 
 ```
 python ocr_server.py
@@ -89,9 +106,9 @@ The server runs locally at `http://localhost:7331` and handles:
 - Japanese OCR using Google Lens (primary) with MeikiOCR as fallback
 - Audio extraction from YouTube via yt-dlp + ffmpeg
 
-### 4. Auto-start on login (Windows)
+#### 4. Auto-start on login (Windows)
 
-Double-click `start_ocr.vbs` or copy it to your Startup folder:
+Copy `start_ocr.vbs` to your Startup folder:
 
 ```
 %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
@@ -99,7 +116,9 @@ Double-click `start_ocr.vbs` or copy it to your Startup folder:
 
 This starts the OCR server silently in the background when you log in.
 
-### 5. Configure Anki fields
+</details>
+
+### Configure Anki fields
 
 Make sure your Anki note type has fields matching the extension settings:
 - A field for screenshots (default: `Picture`)
