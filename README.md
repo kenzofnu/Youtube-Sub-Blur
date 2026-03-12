@@ -55,9 +55,14 @@ Hotkeys can be changed at `chrome://extensions/shortcuts`.
 3. Click **Load unpacked** and select the project folder
 4. Open any YouTube video and press **Alt + B**
 
+![Demo - dark video](screenshots/demo-dark.png)
+![Demo - light video](screenshots/demo-light.png)
+
 ## Settings
 
 Click the extension icon to open the popup:
+
+![Settings](screenshots/popup.png)
 
 - **Default On** -- auto-show the blur box when a video loads
 - **Auto Review Mode** -- enable continuous review loop mode
