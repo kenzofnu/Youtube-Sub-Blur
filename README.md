@@ -2,25 +2,38 @@
 
 Chrome extension that blurs hard-coded subtitles on YouTube videos. Built for language immersion -- hide distracting hardsubs so you can focus on listening.
 
+
+![Demo - dark video](screenshots/demo-dark.png)
+![Demo - light video](screenshots/demo-light.png)
+
+
 ## Features
 
 ### Blur Overlay
 
+
 Toggle a movable, resizable blur box over hard-coded subtitles so you can focus on listening.
 
-<video src="https://github.com/kenzofnu/Youtube-Sub-Blur/raw/main/screenshots/part1.mp4" controls width="100%"></video>
+
+https://github.com/user-attachments/assets/6eecd833-cd5d-4dec-be5c-8d53a9b295e2
+
+
 
 ### Review Mode
 
 Rewinds and replays a segment with subs visible, then blurred to test your listening comprehension.
 
-<video src="https://github.com/kenzofnu/Youtube-Sub-Blur/raw/main/screenshots/part2.mp4" controls width="100%"></video>
+
+https://github.com/user-attachments/assets/91f55c7f-8903-4ab0-a4c1-aca74f9186b9
+
+
 
 ### OCR Mining + Anki Integration
 
 Extract subtitle text with OCR for Yomitan lookup. Screenshot and sentence audio are automatically attached to your Anki card.
 
-<video src="https://github.com/kenzofnu/Youtube-Sub-Blur/raw/main/screenshots/part3.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/efb369d9-fe5b-43b2-b787-2e7035a4c55a
+
 
 ### More
 
@@ -54,9 +67,6 @@ Hotkeys can be changed at `chrome://extensions/shortcuts`.
 2. Open `chrome://extensions/` and enable **Developer mode**
 3. Click **Load unpacked** and select the project folder
 4. Open any YouTube video and press **Alt + B**
-
-![Demo - dark video](screenshots/demo-dark.png)
-![Demo - light video](screenshots/demo-light.png)
 
 ## Settings
 
