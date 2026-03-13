@@ -51,13 +51,15 @@ def glens_ocr(img_pil):
 
 
 def _hidden_subprocess_args():
-    """Return kwargs that hide console windows on Windows."""
+    """Return kwargs that prevent console windows on Windows.
+
+    Uses DETACHED_PROCESS instead of CREATE_NO_WINDOW because Windows Terminal
+    (default on Win 11) intercepts console creation even for hidden consoles.
+    DETACHED_PROCESS prevents any console from being allocated at all.
+    """
     if sys.platform != "win32":
         return {}
-    si = subprocess.STARTUPINFO()
-    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    si.wShowWindow = subprocess.SW_HIDE
-    return {"creationflags": subprocess.CREATE_NO_WINDOW, "startupinfo": si}
+    return {"creationflags": 0x00000008, "stdin": subprocess.DEVNULL}
 
 
 def extract_audio(url, start, end):
