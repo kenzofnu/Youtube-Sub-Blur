@@ -1,5 +1,6 @@
 assets/
 *.zip
+*.log
 node_modules/
 package.json
 package-lock.json
