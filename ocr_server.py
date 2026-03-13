@@ -56,32 +56,49 @@ def extract_audio(url, start, end):
         raise ValueError("Invalid duration")
 
     with tempfile.TemporaryDirectory() as tmpdir:
+        raw_path = os.path.join(tmpdir, "full.%(ext)s")
         out_path = os.path.join(tmpdir, "clip.mp3")
-        section = f"*{start:.1f}-{end:.1f}"
 
+        # Step 1: download full audio with yt-dlp's native downloader
         result = subprocess.run(
             [
                 "yt-dlp",
                 "-f", "ba",
                 "--no-warnings",
-                "--download-sections", section,
-                "--force-keyframes-at-cuts",
                 "--downloader", "native",
-                "-x", "--audio-format", "mp3",
-                "-o", out_path,
+                "-o", raw_path,
                 url,
             ],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=120,
         )
         if result.returncode != 0:
             raise RuntimeError(f"yt-dlp failed: {result.stderr.strip()}")
 
-        # yt-dlp may append format suffix to filename
-        if not os.path.exists(out_path):
-            for f in os.listdir(tmpdir):
-                if f.endswith((".mp3", ".m4a", ".webm", ".ogg", ".opus")):
-                    out_path = os.path.join(tmpdir, f)
-                    break
+        # Find the downloaded file
+        raw_file = None
+        for f in os.listdir(tmpdir):
+            if f.startswith("full."):
+                raw_file = os.path.join(tmpdir, f)
+                break
+
+        if not raw_file:
+            raise RuntimeError("yt-dlp produced no output file")
+
+        # Step 2: extract clip with ffmpeg from local file
+        # -ss after -i ensures seeking by decoded position, not internal PTS
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-i", raw_file,
+                "-ss", f"{start:.2f}",
+                "-t", f"{duration:.2f}",
+                "-vn", "-acodec", "libmp3lame", "-q:a", "4",
+                out_path,
+            ],
+            capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"ffmpeg failed: {result.stderr.strip()}")
 
         if not os.path.exists(out_path):
             raise RuntimeError("Audio file was not created")
