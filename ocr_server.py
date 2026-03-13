@@ -13,6 +13,7 @@ import numpy as np
 from PIL import Image
 from meikiocr.ocr import MeikiOCR
 from owocr.ocr import GoogleLens
+import yt_dlp
 
 meiki = None
 glens = None
@@ -50,45 +51,39 @@ def glens_ocr(img_pil):
     return "\n".join(lines)
 
 
-def _hidden_subprocess_args():
-    """Return kwargs that prevent console windows on Windows.
-
-    Uses DETACHED_PROCESS instead of CREATE_NO_WINDOW because Windows Terminal
-    (default on Win 11) intercepts console creation even for hidden consoles.
-    DETACHED_PROCESS prevents any console from being allocated at all.
-    """
+def _ffmpeg_subprocess_args():
+    """Return extra kwargs to hide the ffmpeg console window on Windows."""
     if sys.platform != "win32":
         return {}
-    return {"creationflags": 0x00000008, "stdin": subprocess.DEVNULL}
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    si.wShowWindow = subprocess.SW_HIDE
+    return {
+        "startupinfo": si,
+        "creationflags": subprocess.CREATE_NO_WINDOW,
+        "stdin": subprocess.DEVNULL,
+    }
 
 
 def extract_audio(url, start, end):
-    """Use yt-dlp + ffmpeg to extract an audio clip from a YouTube video."""
+    """Use yt-dlp (Python API) + ffmpeg to extract an audio clip."""
     duration = end - start
     if duration <= 0 or duration > 60:
         raise ValueError("Invalid duration")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        raw_path = os.path.join(tmpdir, "full.%(ext)s")
         out_path = os.path.join(tmpdir, "clip.mp3")
 
-        # Step 1: download full audio with yt-dlp's native downloader
-        result = subprocess.run(
-            [
-                "yt-dlp",
-                "-f", "ba",
-                "--no-warnings",
-                "--downloader", "native",
-                "-o", raw_path,
-                url,
-            ],
-            capture_output=True, text=True, timeout=120,
-            **_hidden_subprocess_args(),
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"yt-dlp failed: {result.stderr.strip()}")
+        ydl_opts = {
+            "format": "ba",
+            "outtmpl": os.path.join(tmpdir, "full.%(ext)s"),
+            "quiet": True,
+            "no_warnings": True,
+            "downloader": "native",
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
 
-        # Find the downloaded file
         raw_file = None
         for f in os.listdir(tmpdir):
             if f.startswith("full."):
@@ -98,8 +93,6 @@ def extract_audio(url, start, end):
         if not raw_file:
             raise RuntimeError("yt-dlp produced no output file")
 
-        # Step 2: extract clip with ffmpeg from local file
-        # -ss after -i ensures seeking by decoded position, not internal PTS
         result = subprocess.run(
             [
                 "ffmpeg", "-y",
@@ -110,7 +103,7 @@ def extract_audio(url, start, end):
                 out_path,
             ],
             capture_output=True, text=True, timeout=60,
-            **_hidden_subprocess_args(),
+            **_ffmpeg_subprocess_args(),
         )
         if result.returncode != 0:
             raise RuntimeError(f"ffmpeg failed: {result.stderr.strip()}")
