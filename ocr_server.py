@@ -4,7 +4,6 @@ import json
 import base64
 import re
 import subprocess
-import sys
 import tempfile
 import os
 from io import BytesIO
@@ -51,20 +50,6 @@ def glens_ocr(img_pil):
     return "\n".join(lines)
 
 
-def _ffmpeg_subprocess_args():
-    """Return extra kwargs to hide the ffmpeg console window on Windows."""
-    if sys.platform != "win32":
-        return {}
-    si = subprocess.STARTUPINFO()
-    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    si.wShowWindow = subprocess.SW_HIDE
-    return {
-        "startupinfo": si,
-        "creationflags": subprocess.CREATE_NO_WINDOW,
-        "stdin": subprocess.DEVNULL,
-    }
-
-
 def extract_audio(url, start, end):
     """Use yt-dlp (Python API) + ffmpeg to extract an audio clip."""
     duration = end - start
@@ -103,7 +88,6 @@ def extract_audio(url, start, end):
                 out_path,
             ],
             capture_output=True, text=True, timeout=60,
-            **_ffmpeg_subprocess_args(),
         )
         if result.returncode != 0:
             raise RuntimeError(f"ffmpeg failed: {result.stderr.strip()}")
