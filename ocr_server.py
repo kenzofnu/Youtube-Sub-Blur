@@ -1,3 +1,9 @@
+import sys
+import os
+import warnings
+
+warnings.filterwarnings("ignore", message="urllib3|chardet|charset_normalizer")
+
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 import json
@@ -5,7 +11,6 @@ import base64
 import re
 import subprocess
 import tempfile
-import os
 from io import BytesIO
 
 import numpy as np
