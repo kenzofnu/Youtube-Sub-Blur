@@ -4,6 +4,7 @@ import json
 import base64
 import re
 import subprocess
+import sys
 import tempfile
 import os
 from io import BytesIO
@@ -49,6 +50,9 @@ def glens_ocr(img_pil):
     return "\n".join(lines)
 
 
+_NO_WINDOW = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+
+
 def extract_audio(url, start, end):
     """Use yt-dlp + ffmpeg to extract an audio clip from a YouTube video."""
     duration = end - start
@@ -70,6 +74,7 @@ def extract_audio(url, start, end):
                 url,
             ],
             capture_output=True, text=True, timeout=120,
+            creationflags=_NO_WINDOW,
         )
         if result.returncode != 0:
             raise RuntimeError(f"yt-dlp failed: {result.stderr.strip()}")
@@ -96,6 +101,7 @@ def extract_audio(url, start, end):
                 out_path,
             ],
             capture_output=True, text=True, timeout=60,
+            creationflags=_NO_WINDOW,
         )
         if result.returncode != 0:
             raise RuntimeError(f"ffmpeg failed: {result.stderr.strip()}")
