@@ -139,13 +139,13 @@ The server runs locally at `http://localhost:7331` and handles:
 
 #### 4. Auto-start on login (Windows)
 
-Copy `start_ocr.vbs` to your Startup folder:
+Run `setup.bat` to configure auto-start, or manually create a shortcut to `start_ocr.vbs` in your Startup folder:
 
 ```
 %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
 ```
 
-This starts the OCR server silently in the background when you log in.
+The VBS must be run from the project folder (or the Startup entry must point back to it) so it can find `ocr_server.py`.
 
 </details>
 

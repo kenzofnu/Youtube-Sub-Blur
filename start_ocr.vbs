@@ -8,5 +8,5 @@ WScript.Sleep 1000
 
 ' Start the OCR server silently
 Dim scriptDir
-scriptDir = Replace(WScript.ScriptFullName, "start_ocr.vbs", "")
+scriptDir = Replace(WScript.ScriptFullName, WScript.ScriptName, "")
 WshShell.Run "pythonw """ & scriptDir & "ocr_server.py""", 0, False

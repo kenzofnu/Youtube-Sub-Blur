@@ -53,10 +53,11 @@ if %errorlevel% neq 0 (
     echo [OK] yt-dlp found
 )
 
-:: Copy startup script
+:: Create startup script that launches the project's start_ocr.vbs
 echo.
 echo Installing auto-start script...
-copy /Y "%~dp0start_ocr.vbs" "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\start_ocr.vbs" >nul
+set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\start_ocr.vbs"
+echo CreateObject("WScript.Shell").Run "wscript ""%~dp0start_ocr.vbs""", 0, False > "%STARTUP%"
 echo [OK] OCR server will auto-start on login
 
 :: Remind about AnkiConnect
