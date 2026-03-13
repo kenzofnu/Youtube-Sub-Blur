@@ -435,6 +435,29 @@
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0);
+
+      if (overlay && visible) {
+        const videoRect = video.getBoundingClientRect();
+        const overlayRect = overlay.getBoundingClientRect();
+        const scaleX = video.videoWidth / videoRect.width;
+        const scaleY = video.videoHeight / videoRect.height;
+
+        const bx = Math.max(0, (overlayRect.left - videoRect.left) * scaleX);
+        const by = Math.max(0, (overlayRect.top - videoRect.top) * scaleY);
+        const bw = Math.min(video.videoWidth - bx, overlayRect.width * scaleX);
+        const bh = Math.min(video.videoHeight - by, overlayRect.height * scaleY);
+
+        if (bw > 0 && bh > 0) {
+          ctx.save();
+          ctx.filter = `blur(${settings.blurAmount}px)`;
+          ctx.beginPath();
+          ctx.rect(bx, by, bw, bh);
+          ctx.clip();
+          ctx.drawImage(video, 0, 0);
+          ctx.restore();
+        }
+      }
+
       return canvas.toDataURL("image/jpeg", 0.92);
     } catch (e) {
       console.warn("[YSB] captureVideoFrame failed:", e);
@@ -453,9 +476,10 @@
 
   async function fetchSentenceAudio(videoUrl, captureTime) {
     const duration = settings.audioSeconds || 5;
-    const tail = Math.min(2, duration * 0.3);
-    const start = Math.max(0, captureTime - duration + tail);
-    const end = captureTime + tail;
+    const before = duration * 0.6;
+    const after = duration * 0.4;
+    const start = Math.max(0, captureTime - before);
+    const end = captureTime + after;
     try {
       const data = await chrome.runtime.sendMessage({
         action: "fetch-audio",
