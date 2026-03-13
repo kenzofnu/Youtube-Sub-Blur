@@ -50,7 +50,14 @@ def glens_ocr(img_pil):
     return "\n".join(lines)
 
 
-_NO_WINDOW = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+def _hidden_subprocess_args():
+    """Return kwargs that hide console windows on Windows."""
+    if sys.platform != "win32":
+        return {}
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    si.wShowWindow = subprocess.SW_HIDE
+    return {"creationflags": subprocess.CREATE_NO_WINDOW, "startupinfo": si}
 
 
 def extract_audio(url, start, end):
@@ -74,7 +81,7 @@ def extract_audio(url, start, end):
                 url,
             ],
             capture_output=True, text=True, timeout=120,
-            creationflags=_NO_WINDOW,
+            **_hidden_subprocess_args(),
         )
         if result.returncode != 0:
             raise RuntimeError(f"yt-dlp failed: {result.stderr.strip()}")
@@ -101,7 +108,7 @@ def extract_audio(url, start, end):
                 out_path,
             ],
             capture_output=True, text=True, timeout=60,
-            creationflags=_NO_WINDOW,
+            **_hidden_subprocess_args(),
         )
         if result.returncode != 0:
             raise RuntimeError(f"ffmpeg failed: {result.stderr.strip()}")
