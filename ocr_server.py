@@ -56,43 +56,37 @@ def glens_ocr(img_pil):
 
 
 def extract_audio(url, start, end):
-    """Use yt-dlp (Python API) + ffmpeg to extract an audio clip."""
+    """Get audio stream URL via yt-dlp, then extract clip with ffmpeg."""
     duration = end - start
     if duration <= 0 or duration > 60:
         raise ValueError("Invalid duration")
 
+    with yt_dlp.YoutubeDL({"format": "ba", "quiet": True, "no_warnings": True}) as ydl:
+        info = ydl.extract_info(url, download=False)
+
+    audio_url = info.get("url")
+    if not audio_url:
+        raise RuntimeError("Could not get audio stream URL")
+
+    headers = info.get("http_headers", {})
+    header_args = []
+    for k, v in headers.items():
+        header_args += ["-headers", f"{k}: {v}\r\n"]
+
     with tempfile.TemporaryDirectory() as tmpdir:
         out_path = os.path.join(tmpdir, "clip.mp3")
-
-        ydl_opts = {
-            "format": "ba",
-            "outtmpl": os.path.join(tmpdir, "full.%(ext)s"),
-            "quiet": True,
-            "no_warnings": True,
-            "downloader": "native",
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-
-        raw_file = None
-        for f in os.listdir(tmpdir):
-            if f.startswith("full."):
-                raw_file = os.path.join(tmpdir, f)
-                break
-
-        if not raw_file:
-            raise RuntimeError("yt-dlp produced no output file")
 
         result = subprocess.run(
             [
                 "ffmpeg", "-y",
-                "-i", raw_file,
+                *header_args,
                 "-ss", f"{start:.2f}",
+                "-i", audio_url,
                 "-t", f"{duration:.2f}",
                 "-vn", "-acodec", "libmp3lame", "-q:a", "4",
                 out_path,
             ],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=30,
         )
         if result.returncode != 0:
             raise RuntimeError(f"ffmpeg failed: {result.stderr.strip()}")
