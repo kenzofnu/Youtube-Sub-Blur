@@ -42,13 +42,18 @@
     const offsetX = videoRect.left - containerRect.left;
     const offsetY = videoRect.top - containerRect.top;
 
+    const olLeft = parseFloat(overlay.style.left) || 0;
+    const olTop = parseFloat(overlay.style.top) || 0;
+    const olWidth = parseFloat(overlay.style.width) || overlay.offsetWidth;
+    const olHeight = parseFloat(overlay.style.height) || overlay.offsetHeight;
+
     const pos = {
-      x: (overlay.offsetLeft - offsetX) / videoRect.width,
-      y: (overlay.offsetTop - offsetY) / videoRect.height,
+      x: (olLeft - offsetX) / videoRect.width,
+      y: (olTop - offsetY) / videoRect.height,
     };
     const size = {
-      w: overlay.offsetWidth / videoRect.width,
-      h: overlay.offsetHeight / videoRect.height,
+      w: olWidth / videoRect.width,
+      h: olHeight / videoRect.height,
     };
 
     settings.boxPosition = pos;
@@ -138,8 +143,8 @@
       e.preventDefault();
       e.stopPropagation();
       isDragging = true;
-      dragOffset.x = e.clientX - overlay.offsetLeft;
-      dragOffset.y = e.clientY - overlay.offsetTop;
+      dragOffset.x = e.clientX - (parseFloat(overlay.style.left) || 0);
+      dragOffset.y = e.clientY - (parseFloat(overlay.style.top) || 0);
       overlay.classList.add("ysb-moving");
     });
 
@@ -151,10 +156,10 @@
         resizeEdge = handle.dataset.edge;
         dragOffset.x = e.clientX;
         dragOffset.y = e.clientY;
-        dragOffset.startLeft = overlay.offsetLeft;
-        dragOffset.startTop = overlay.offsetTop;
-        dragOffset.startWidth = overlay.offsetWidth;
-        dragOffset.startHeight = overlay.offsetHeight;
+        dragOffset.startLeft = parseFloat(overlay.style.left) || 0;
+        dragOffset.startTop = parseFloat(overlay.style.top) || 0;
+        dragOffset.startWidth = parseFloat(overlay.style.width) || overlay.offsetWidth;
+        dragOffset.startHeight = parseFloat(overlay.style.height) || overlay.offsetHeight;
         overlay.classList.add("ysb-resizing");
       });
     });
@@ -216,6 +221,7 @@
     if (!videoElement) return;
     await loadSettings();
     createOverlay();
+    positionOverlay();
     overlay.style.display = "block";
     setBlur(true);
     visible = true;
@@ -435,29 +441,6 @@
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0);
-
-      if (overlay && visible) {
-        const videoRect = video.getBoundingClientRect();
-        const overlayRect = overlay.getBoundingClientRect();
-        const scaleX = video.videoWidth / videoRect.width;
-        const scaleY = video.videoHeight / videoRect.height;
-
-        const bx = Math.max(0, (overlayRect.left - videoRect.left) * scaleX);
-        const by = Math.max(0, (overlayRect.top - videoRect.top) * scaleY);
-        const bw = Math.min(video.videoWidth - bx, overlayRect.width * scaleX);
-        const bh = Math.min(video.videoHeight - by, overlayRect.height * scaleY);
-
-        if (bw > 0 && bh > 0) {
-          ctx.save();
-          ctx.filter = `blur(${settings.blurAmount}px)`;
-          ctx.beginPath();
-          ctx.rect(bx, by, bw, bh);
-          ctx.clip();
-          ctx.drawImage(video, 0, 0);
-          ctx.restore();
-        }
-      }
-
       return canvas.toDataURL("image/jpeg", 0.92);
     } catch (e) {
       console.warn("[YSB] captureVideoFrame failed:", e);

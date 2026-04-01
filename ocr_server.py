@@ -1,4 +1,3 @@
-import sys
 import os
 import warnings
 
@@ -9,7 +8,6 @@ from socketserver import ThreadingMixIn
 import json
 import base64
 import re
-import subprocess
 import tempfile
 from io import BytesIO
 
@@ -56,46 +54,50 @@ def glens_ocr(img_pil):
 
 
 def extract_audio(url, start, end):
-    """Get audio stream URL via yt-dlp, then extract clip with ffmpeg."""
+    """Download an audio clip via yt-dlp (handles auth/cookies for all stream types)."""
     duration = end - start
     if duration <= 0 or duration > 60:
         raise ValueError("Invalid duration")
 
-    with yt_dlp.YoutubeDL({"format": "ba", "quiet": True, "no_warnings": True}) as ydl:
-        info = ydl.extract_info(url, download=False)
-
-    audio_url = info.get("url")
-    if not audio_url:
-        raise RuntimeError("Could not get audio stream URL")
-
-    headers = info.get("http_headers", {})
-    header_args = []
-    for k, v in headers.items():
-        header_args += ["-headers", f"{k}: {v}\r\n"]
-
     with tempfile.TemporaryDirectory() as tmpdir:
-        out_path = os.path.join(tmpdir, "clip.mp3")
+        out_base = os.path.join(tmpdir, "clip")
 
-        result = subprocess.run(
-            [
-                "ffmpeg", "-y",
-                *header_args,
-                "-ss", f"{start:.2f}",
-                "-i", audio_url,
-                "-t", f"{duration:.2f}",
-                "-vn", "-acodec", "libmp3lame", "-q:a", "4",
-                out_path,
+        ydl_opts = {
+            "format": "ba/b",
+            "quiet": True,
+            "no_warnings": True,
+            "outtmpl": out_base + ".%(ext)s",
+            "download_ranges": yt_dlp.utils.download_range_func(None, [(start, end)]),
+            "force_keyframes_at_cuts": True,
+            "postprocessors": [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "4",
+                }
             ],
-            capture_output=True, text=True, timeout=30,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"ffmpeg failed: {result.stderr.strip()}")
+        }
 
-        if not os.path.exists(out_path):
-            raise RuntimeError("Audio file was not created")
+        # Try with Chrome cookies first (needed for live/DVR/members-only streams)
+        try:
+            with yt_dlp.YoutubeDL({**ydl_opts, "cookiesfrombrowser": ("chrome",)}) as ydl:
+                ydl.download([url])
+        except Exception:
+            # Clean up partial files and retry without cookies (works for public VODs)
+            for f in os.listdir(tmpdir):
+                try:
+                    os.remove(os.path.join(tmpdir, f))
+                except OSError:
+                    pass
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
 
-        with open(out_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
+        for f in os.listdir(tmpdir):
+            if f.endswith(".mp3"):
+                with open(os.path.join(tmpdir, f), "rb") as fh:
+                    return base64.b64encode(fh.read()).decode()
+
+        raise RuntimeError("Audio file was not created")
 
 
 class OCRHandler(BaseHTTPRequestHandler):
