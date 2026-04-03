@@ -9,6 +9,9 @@ import json
 import base64
 import re
 import tempfile
+import time
+import subprocess
+import threading
 from io import BytesIO
 
 import numpy as np
@@ -53,51 +56,89 @@ def glens_ocr(img_pil):
     return "\n".join(lines)
 
 
+_audio_url_cache = {}
+_cache_lock = threading.Lock()
+_CACHE_TTL = 1800
+
+
+def _video_id(url):
+    m = re.search(r"[?&]v=([a-zA-Z0-9_-]{11})", url)
+    return m.group(1) if m else url
+
+
+def _resolve_audio_url(page_url):
+    """Extract a direct audio stream URL via yt-dlp (expensive, cached)."""
+    ydl_opts = {
+        "format": "ba/b",
+        "quiet": True,
+        "no_warnings": True,
+    }
+    last_err = None
+    for opts in (
+        {**ydl_opts, "cookiesfrombrowser": ("chrome",)},
+        ydl_opts,
+    ):
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(page_url, download=False)
+                return info["url"]
+        except Exception as e:
+            last_err = e
+    raise last_err
+
+
+def _get_audio_url(page_url, force_refresh=False):
+    """Return a (possibly cached) direct audio stream URL."""
+    vid = _video_id(page_url)
+    if not force_refresh:
+        with _cache_lock:
+            entry = _audio_url_cache.get(vid)
+            if entry and time.time() - entry[1] < _CACHE_TTL:
+                return entry[0]
+    stream_url = _resolve_audio_url(page_url)
+    with _cache_lock:
+        _audio_url_cache[vid] = (stream_url, time.time())
+    return stream_url
+
+
+def _ffmpeg_clip(stream_url, start, duration, out_path):
+    """Use ffmpeg to grab an audio clip directly from a stream URL."""
+    cmd = [
+        "ffmpeg", "-y",
+        "-ss", f"{start:.2f}",
+        "-i", stream_url,
+        "-t", f"{duration:.2f}",
+        "-acodec", "libmp3lame", "-q:a", "4",
+        "-loglevel", "error",
+        out_path,
+    ]
+    r = subprocess.run(cmd, capture_output=True, timeout=30)
+    if r.returncode != 0:
+        stderr = r.stderr.decode(errors="replace").strip()
+        raise RuntimeError(f"ffmpeg error: {stderr}")
+
+
 def extract_audio(url, start, end):
-    """Download an audio clip via yt-dlp (handles auth/cookies for all stream types)."""
+    """Download an audio clip: resolve stream URL once (cached), then ffmpeg clip."""
     duration = end - start
     if duration <= 0 or duration > 60:
         raise ValueError("Invalid duration")
 
+    vid = _video_id(url)
+
     with tempfile.TemporaryDirectory() as tmpdir:
-        out_base = os.path.join(tmpdir, "clip")
-
-        ydl_opts = {
-            "format": "ba/b",
-            "quiet": True,
-            "no_warnings": True,
-            "outtmpl": out_base + ".%(ext)s",
-            "download_ranges": yt_dlp.utils.download_range_func(None, [(start, end)]),
-            "force_keyframes_at_cuts": True,
-            "postprocessors": [
-                {
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "4",
-                }
-            ],
-        }
-
-        # Try with Chrome cookies first (needed for live/DVR/members-only streams)
+        out = os.path.join(tmpdir, "clip.mp3")
+        stream_url = _get_audio_url(url)
         try:
-            with yt_dlp.YoutubeDL({**ydl_opts, "cookiesfrombrowser": ("chrome",)}) as ydl:
-                ydl.download([url])
+            _ffmpeg_clip(stream_url, start, duration, out)
         except Exception:
-            # Clean up partial files and retry without cookies (works for public VODs)
-            for f in os.listdir(tmpdir):
-                try:
-                    os.remove(os.path.join(tmpdir, f))
-                except OSError:
-                    pass
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+            with _cache_lock:
+                _audio_url_cache.pop(vid, None)
+            stream_url = _get_audio_url(url, force_refresh=True)
+            _ffmpeg_clip(stream_url, start, duration, out)
 
-        for f in os.listdir(tmpdir):
-            if f.endswith(".mp3"):
-                with open(os.path.join(tmpdir, f), "rb") as fh:
-                    return base64.b64encode(fh.read()).decode()
-
-        raise RuntimeError("Audio file was not created")
+        with open(out, "rb") as fh:
+            return base64.b64encode(fh.read()).decode()
 
 
 class OCRHandler(BaseHTTPRequestHandler):
@@ -119,7 +160,11 @@ class OCRHandler(BaseHTTPRequestHandler):
             start = float(data["start"])
             end = float(data["end"])
 
+            vid = _video_id(url)
+            print(f"[audio] {vid} {start:.1f}–{end:.1f}s", end=" ", flush=True)
+            t0 = time.time()
             audio_b64 = extract_audio(url, start, end)
+            print(f"OK ({time.time() - t0:.1f}s, {len(audio_b64) // 1024}KB)")
 
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -127,6 +172,7 @@ class OCRHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"audio": audio_b64}).encode())
         except Exception as e:
+            print(f"FAIL: {e}")
             self.send_response(500)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")

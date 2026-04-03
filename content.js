@@ -470,6 +470,7 @@
         start,
         end,
       });
+      if (!data) throw new Error("No response from background script");
       if (data.error) throw new Error(data.error);
       return data.audio || null;
     } catch (e) {
